@@ -22,9 +22,15 @@ export function run(events, ctx = {}) {
     }));
   };
 
-  for (const event of events) {
-    // Events with no real timestamp cannot be windowed. Position is not time.
-    if (!event.eventName || event.timestamp === null) continue;
+  // Nothing upstream guarantees chronological order — the capture file's
+  // array order is whatever the recorder wrote. Sort a copy so window
+  // deltas are always non-negative; unsorted input must not create groups.
+  const ordered = events
+    .filter((event) => event.eventName && event.timestamp !== null)
+    .slice()
+    .sort((a, b) => a.timestamp - b.timestamp);
+
+  for (const event of ordered) {
     const key = `${event.platform}|${event.account ?? ''}|${event.eventName}|${event.pageUrl ?? ''}|${dedupeKey(event)}`;
     const group = open.get(key);
     if (group && event.timestamp - group.last.timestamp <= windowMs) {
