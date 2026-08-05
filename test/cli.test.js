@@ -23,9 +23,10 @@ test('audits the captured roll20 dataLayer fixture end to end', () => {
 
 test('audits the captured GA4 storefront fixture end to end', () => {
   const res = run('audit', fixture('ga4/storefront-pageview.json'));
-  assert.equal(res.status, 0);
+  assert.equal(res.status, 0); // advisory findings never affect the exit code
   assert.match(res.stdout, /Decoded 4 events across: ga4/);
-  assert.match(res.stdout, /No advisory findings/);
+  assert.match(res.stdout, /\[event-name-length\] custom_event_with_a_name_over_40_charact/);
+  assert.match(res.stdout, /\[debug-mode-in-prod\]/);
   assert.equal(res.stderr, '');
 });
 
