@@ -2,9 +2,12 @@ import { finding } from '../findings.js';
 
 export const id = 'naming-collision';
 
+// page_view and click are deliberately absent: pushing {event:'page_view'}
+// for SPA virtual pageviews and click-trigger events is mainstream GTM
+// practice, not a defect — flagging them would cry wolf on most containers.
 const GA4_AUTO = new Set([
-  'page_view', 'session_start', 'first_visit', 'user_engagement', 'scroll',
-  'click', 'file_download', 'form_start', 'form_submit', 'video_start',
+  'session_start', 'first_visit', 'user_engagement', 'scroll',
+  'file_download', 'form_start', 'form_submit', 'video_start',
   'video_progress', 'video_complete', 'view_search_results',
 ]);
 const INTERNAL = /^(gtm\.|gtag\.)|^datalayer\.push$/;

@@ -104,3 +104,31 @@ test('stays silent when hits do carry consent state', () => {
   ];
   assert.ok(!ids(runRules(events)).includes('consent-suppression'));
 });
+
+test('unresolved consent everywhere is suppression, not compliance', () => {
+  const events = [
+    tagEvent({ platform: 'datalayer', eventName: 'gtag.consent.default', params: {}, timestamp: null, order: 0 }),
+    ga4Event({ eventName: 'page_view', consent: { ads: 'unset', analytics: 'unset' } }),
+    ga4Event({ eventName: 'view_item', consent: null, timestamp: 100 }),
+  ];
+  assert.ok(ids(runRules(events)).includes('consent-suppression'));
+});
+
+test('one resolved consent value proves the integration and silences the rule', () => {
+  const events = [
+    tagEvent({ platform: 'datalayer', eventName: 'gtag.consent.default', params: {}, timestamp: null, order: 0 }),
+    ga4Event({ eventName: 'page_view', consent: { ads: 'unset', analytics: 'granted' } }),
+  ];
+  assert.ok(!ids(runRules(events)).includes('consent-suppression'));
+});
+
+test('clean params stay quiet', () => {
+  const events = [ga4Event({ eventName: 'purchase', params: { transaction_id: 'T-9', value: 5, currency: 'USD' } })];
+  assert.ok(!ids(runRules(events)).includes('placeholder-param'));
+});
+
+test('emoji names are measured in codepoints, not UTF-16 units', () => {
+  const twentyEmoji = '🎉'.repeat(20); // .length is 40, but 20 characters
+  const events = [ga4Event({ eventName: twentyEmoji })];
+  assert.ok(!ids(runRules(events)).includes('event-name-length'));
+});

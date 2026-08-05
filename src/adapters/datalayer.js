@@ -17,8 +17,9 @@ export function decodeDataLayer(entries, ctx = {}) {
     }
     if (!('event' in entry)) {
       const params = {};
+      // __proto__ assignment would poison the params prototype and let a hostile capture file fabricate findings.
       for (const [key, value] of Object.entries(entry)) {
-        if (key.startsWith('gtm.')) continue;
+        if (key.startsWith('gtm.') || key === '__proto__') continue;
         params[key] = value;
       }
       if (Object.keys(params).length) {
@@ -86,7 +87,7 @@ function fromGtagCall(args, index, ctx) {
 function fromNamedEvent(entry, index, ctx) {
   const params = {};
   for (const [key, value] of Object.entries(entry)) {
-    if (key === 'event' || key.startsWith('gtm.')) continue;
+    if (key === 'event' || key.startsWith('gtm.') || key === '__proto__') continue;
     params[key] = value;
   }
   return tagEvent({

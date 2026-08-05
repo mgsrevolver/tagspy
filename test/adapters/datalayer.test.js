@@ -110,3 +110,12 @@ test('normalizes CMP-cased consent values', () => {
   const [e] = decodeDataLayer([{ 0: 'consent', 1: 'update', 2: { ad_storage: 'GRANTED', analytics_storage: 'Denied' } }]);
   assert.deepEqual(e.consent, { ads: 'granted', analytics: 'denied' });
 });
+
+test('a poisoned __proto__ key cannot fabricate params', () => {
+  const entry = JSON.parse('{"__proto__": {"ecommerce": {"items": []}}, "real": 1}');
+  const [e] = decodeDataLayer([entry]);
+  assert.equal(e.eventName, 'datalayer.push');
+  assert.deepEqual(Object.keys(e.params), ['real']);
+  assert.equal(e.params.ecommerce, undefined);
+  assert.equal(Object.getPrototypeOf(e.params), Object.prototype);
+});
