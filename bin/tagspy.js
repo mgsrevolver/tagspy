@@ -25,5 +25,7 @@ const { events, errors } = decodeCapture(capture);
 const findings = runRules(events, { errors });
 process.stdout.write(renderReport(findings, { events }));
 
-// Advisory findings never affect the exit code.
-process.exit(0);
+// Advisory findings never affect the exit code. process.exitCode (rather
+// than process.exit) lets Node flush pending stdout writes: exit() kills
+// them, silently truncating any report larger than one pipe buffer.
+process.exitCode = 0;
