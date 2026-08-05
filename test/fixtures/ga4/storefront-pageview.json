@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "capturedAt": "2026-08-05T14:47:47.000Z",
+  "_source": "captured live from shop.merch.google homepage 2026-08-05 via Chrome DevTools MCP (CDP); identifiers scrubbed by hand (cid, sid, _p, auid, ecid, _gid, jid, gjid, z, a, random/rnd -> REDACTED). Consent state: OneTrust default, only strictly-necessary granted (gcs=G1--). Notable real-world defects preserved: en truncated at GA4's 40-char limit, ep.debug_mode=True in production, legacy UA property still firing via /j/collect, 8 GA4 properties on one page.",
+  "requests": [
+    {
+      "url": "https://analytics.google.com/g/collect?v=2&tid=G-JPEV636QX5&gtm=45je6840v869714646z8550731za20gzb550731zd550731&_p=REDACTED&_gaz=1&gcd=13l3l3l3l2l1&npa=0&dma=0&_eu=EAAAAGA&are=1&cid=REDACTED&frm=0&ir=1&pscdl=noapi&rcb=3&sr=1710x1107&ul=en-us&gaf=2&_s=1&sid=REDACTED&sct=1&seg=0&dl=https%3A%2F%2Fshop.merch.google%2F&dt=Home&en=page_view&_fv=2&_nsi=1&_ss=1&ep.all_data=True&tfd=1021",
+      "method": "POST",
+      "timestamp": 1785955667800,
+      "pageUrl": "https://shop.merch.google/"
+    },
+    {
+      "url": "https://stats.g.doubleclick.net/g/collect?v=2&tid=G-JPEV636QX5&cid=REDACTED&gtm=45je6840v869714646z8550731za20gzb550731zd550731&rcb=3&aip=1&dma=0&gcd=13l3l3l3l2l1&npa=0&frm=0",
+      "method": "POST",
+      "timestamp": 1785955667810,
+      "pageUrl": "https://shop.merch.google/"
+    },
+    {
+      "url": "https://analytics.google.com/g/collect?v=2&tid=G-XR6MYBBELZ&gtm=45je6840v880427313za20gzb550731zd550731&_p=REDACTED&gcd=13l3l3l3l2l1&npa=0&dma=0&ecid=REDACTED&_eu=AAgAACQ&are=1&cid=REDACTED&frm=0&ibt=1&ngs=1&pscdl=noapi&rcb=9&sr=1710x1107&ul=en-us&_s=3&sid=REDACTED&sct=1&seg=0&dl=https%3A%2F%2Fshop.merch.google%2F&dt=Home&en=custom_event_with_a_name_over_40_charact&_c=1&ep.all_data=True&ep.debug_mode=True&tfd=1061",
+      "method": "POST",
+      "timestamp": 1785955667842,
+      "pageUrl": "https://shop.merch.google/"
+    },
+    {
+      "url": "https://analytics.google.com/g/collect?v=2&tid=G-MH4QR9F4ZK&gtm=45je6840v884648366z8550731za20gzb550731zd550731&_p=REDACTED&_gaz=1&gcd=13l3l3l3l2l1&npa=0&dma=0&_eu=AAAAACA&are=1&cid=REDACTED&frm=0&ibt=1&ngs=1&pscdl=noapi&rcb=10&sr=1710x1107&ul=en-us&_s=1&sid=REDACTED&sct=1&seg=0&dl=https%3A%2F%2Fshop.merch.google%2F&dt=Home&en=page_view&_fv=2&_ss=2&_c=1&ep.all_data=True&ep.debug_mode=True&tfd=1133",
+      "method": "POST",
+      "timestamp": 1785955667914,
+      "pageUrl": "https://shop.merch.google/"
+    },
+    {
+      "url": "https://www.google.com/ccm/collect?rcb=19&frm=0&apvc=1&ae=g&auid=REDACTED&dt=Home&en=page_view&dl=https%3A%2F%2Fshop.merch.google%2F&scrsrc=www.googletagmanager.com&rnd=REDACTED&navt=n&npa=0&ep.ads_data_redaction=0&gtm=45He6840v550731za200zd550731xea&gcd=13l3l3l3l1l1&dma=0&tft=1785955667087&tfd=783&fmt=8",
+      "method": "POST",
+      "timestamp": 1785955667870,
+      "pageUrl": "https://shop.merch.google/"
+    },
+    {
+      "url": "https://www.google-analytics.com/j/collect?v=1&_v=j102&aip=1&a=REDACTED&t=pageview&_s=1&dl=https%3A%2F%2Fshop.merch.google%2F&ul=en-us&dt=Home&sr=1710x1107&vp=1200x885&_u=YCDAgAABAAAAACAFC~&jid=REDACTED&gjid=REDACTED&cid=REDACTED&tid=UA-54516992-1&_gid=REDACTED&_slc=1&gtm=45He6840n51CGSQv550731za200zd550731&cd2=0&gcd=13l3l3l3l1l1&dma=0&z=REDACTED",
+      "method": "POST",
+      "timestamp": 1785955668100,
+      "pageUrl": "https://shop.merch.google/"
+    },
+    {
+      "url": "https://analytics.google.com/g/collect?v=2&tid=G-JPEV636QX5&gtm=45je6840v869714646z8550731za20gzb550731zd550731&_p=REDACTED&gcs=G1--&gcd=13l3l3R3l6l1&npa=0&dma=0&_eu=EAAAAGQ&are=1&cid=REDACTED&frm=0&ir=1&pscdl=noapi&rcb=3&sr=1710x1107&ul=en-us&gaf=2&_s=2&sid=REDACTED&sct=1&seg=0&dl=https%3A%2F%2Fshop.merch.google%2F&dt=Home&en=view_promotion&ep.all_data=True&ep.promotion_name=The%20Surfside%20Edit&_et=940&tfd=6964",
+      "method": "POST",
+      "timestamp": 1785955673745,
+      "pageUrl": "https://shop.merch.google/"
+    }
+  ],
+  "dataLayer": []
+}

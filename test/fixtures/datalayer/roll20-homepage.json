@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "capturedAt": "2026-08-05T17:01:18.823Z",
+  "_source": "captured from roll20.net homepage",
+  "requests": [],
+  "dataLayer": [
+    { "gtm.start": 1785949278432, "event": "gtm.js", "gtm.uniqueEventId": 3 },
+    { "0": "js", "1": "2026-08-05T17:01:18.823Z" },
+    { "0": "config", "1": "UA-31040388-1", "2": { "cookieDomain": "auto", "send_page_view": false } },
+    { "0": "config", "1": "G-SZLSVQPSWG", "2": { "cookieDomain": "auto", "send_page_view": false } },
+    { "event": "optedIn", "gtm.uniqueEventId": 7 },
+    { "event": "start_pw", "gtm.uniqueEventId": 8 },
+    { "event": "gtm.dom", "gtm.uniqueEventId": 9 }
+  ]
+}
