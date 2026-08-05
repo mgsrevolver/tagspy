@@ -81,7 +81,7 @@ Every adapter produces this shape. Every rule consumes only this shape.
 
 **Interfaces:**
 - Consumes: nothing
-- Produces: `loadCapture(raw) → {version, capturedAt, requests, dataLayer}` where each request is `{url, method, body, timestamp, pageUrl}`; `CaptureError` class
+- Produces: `loadCapture(raw) → {version, capturedAt, requests, dataLayer}` where each request is `{url, method, body, timestamp, pageUrl}`; `CaptureError` class. `timestamp` is a number when the capture recorded one and `null` otherwise — never a synthesized array index, per the `timestamp` vs `order` rule in the TagEvent contract above.
 
 - [ ] **Step 1: Write `package.json`**
 
@@ -135,13 +135,28 @@ test('drops requests with no url and defaults method to GET', () => {
   assert.equal(out.requests[0].method, 'GET');
 });
 
-test('falls back to array index when timestamp is missing', () => {
+test('leaves timestamp null when the capture recorded none', () => {
   const out = loadCapture({
     version: 1,
     requests: [{ url: 'https://a.test/' }, { url: 'https://b.test/', timestamp: 500 }],
   });
-  assert.equal(out.requests[0].timestamp, 0);
+  assert.equal(out.requests[0].timestamp, null);
   assert.equal(out.requests[1].timestamp, 500);
+});
+
+test('preserves a zero timestamp', () => {
+  const out = loadCapture({ version: 1, requests: [{ url: 'https://a.test/', timestamp: 0 }] });
+  assert.equal(out.requests[0].timestamp, 0);
+});
+
+test('rejects an empty url', () => {
+  const out = loadCapture({ version: 1, requests: [{ url: '' }, { url: 'https://a.test/' }] });
+  assert.equal(out.requests.length, 1);
+  assert.equal(out.requests[0].url, 'https://a.test/');
+});
+
+test('rejects a non-array dataLayer', () => {
+  assert.throws(() => loadCapture({ version: 1, dataLayer: 'nope' }), CaptureError);
 });
 ```
 
@@ -173,12 +188,15 @@ export function loadCapture(raw) {
     version: 1,
     capturedAt: raw.capturedAt ?? null,
     requests: requests
-      .filter((r) => r && typeof r.url === 'string')
-      .map((r, i) => ({
+      .filter((r) => r && typeof r.url === 'string' && r.url !== '')
+      .map((r) => ({
         url: r.url,
         method: typeof r.method === 'string' ? r.method : 'GET',
         body: typeof r.body === 'string' ? r.body : null,
-        timestamp: Number.isFinite(r.timestamp) ? r.timestamp : i,
+        // null, never an index: a position is not a millisecond. Windowed
+        // rules must skip events whose timestamp is unknowable rather than
+        // compare array offsets as if they were elapsed time.
+        timestamp: Number.isFinite(r.timestamp) ? r.timestamp : null,
         pageUrl: typeof r.pageUrl === 'string' ? r.pageUrl : null,
       })),
     dataLayer,
