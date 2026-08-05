@@ -770,6 +770,17 @@ test('one clean convention produces no naming findings', () => {
   assert.ok(!ids(runRules(events)).includes('naming-collision'));
 });
 
+test('a single mixed-style name is not a convention mix with itself', () => {
+  const events = [dl('myEvent_v2')];
+  assert.ok(!ids(runRules(events)).includes('naming-collision'));
+});
+
+test('hyphen and underscore variants collide', () => {
+  const events = [dl('add-to-cart'), dl('add_to_cart', {}, 1)];
+  const found = runRules(events).filter((f) => f.rule === 'naming-collision');
+  assert.ok(found.some((f) => /collide/.test(f.message)));
+});
+
 test('flags a business event pushed before container init', () => {
   const events = [dl('early_signup', {}, 0), dl('gtm.js', {}, 1)];
   const found = runRules(events).find((f) => f.rule === 'push-before-init');
@@ -840,7 +851,9 @@ export function run(events) {
 
   const normalized = new Map();
   for (const name of names) {
-    const norm = name.toLowerCase().replace(/_/g, '');
+    // Underscores AND hyphens: GA4 names don't allow hyphens, so add-to-cart
+    // vs add_to_cart is a real collision, not a style choice.
+    const norm = name.toLowerCase().replace(/[_-]/g, '');
     if (normalized.has(norm) && normalized.get(norm) !== name) {
       findings.push(finding({
         rule: id,
@@ -854,8 +867,11 @@ export function run(events) {
     }
   }
 
-  const camel = names.filter((n) => CAMEL.test(n));
-  const snake = names.filter((n) => n.includes('_'));
+  // A name that is BOTH camel and snake (myEvent_v2) belongs to neither pure
+  // convention — counting it in both manufactured a self-collision mix
+  // finding on otherwise-uniform containers.
+  const camel = names.filter((n) => CAMEL.test(n) && !n.includes('_'));
+  const snake = names.filter((n) => n.includes('_') && !CAMEL.test(n));
   if (camel.length && snake.length) {
     findings.push(finding({
       rule: id,
