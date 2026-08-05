@@ -49,7 +49,11 @@ function fromGtagCall(args, index, ctx) {
     });
   }
   if (command === 'consent') {
-    return tagEvent({ ...common, eventName: `gtag.consent.${target}` });
+    return tagEvent({
+      ...common,
+      eventName: `gtag.consent.${target}`,
+      consent: consentFromStorageParams(common.params),
+    });
   }
   return tagEvent({ ...common, eventName: `gtag.${command}` });
 }
@@ -74,4 +78,15 @@ function fromNamedEvent(entry, index, ctx) {
 function plainObject(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
   return { ...value };
+}
+
+// Maps gtag consent-mode storage keys onto the unified consent vocabulary
+// established by the GA4 adapter ({ads, analytics}); raw params are kept.
+function consentFromStorageParams(params) {
+  const mapping = { ad_storage: 'ads', analytics_storage: 'analytics' };
+  const out = {};
+  for (const [key, name] of Object.entries(mapping)) {
+    if (params[key] === 'granted' || params[key] === 'denied') out[name] = params[key];
+  }
+  return Object.keys(out).length ? out : null;
 }

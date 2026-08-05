@@ -86,11 +86,9 @@ function decodeItems(params) {
 }
 
 function decodeConsent(gcs) {
-  if (!gcs || !/^G1[01][01]$/.test(gcs)) return null;
-  return {
-    ads: gcs[2] === '1' ? 'granted' : 'denied',
-    analytics: gcs[3] === '1' ? 'granted' : 'denied',
-  };
+  if (!gcs || !/^G1[01-][01-]$/.test(gcs)) return null;
+  const state = (c) => (c === '1' ? 'granted' : c === '0' ? 'denied' : 'unset');
+  return { ads: state(gcs[2]), analytics: state(gcs[3]) };
 }
 
 function toNumber(value) {

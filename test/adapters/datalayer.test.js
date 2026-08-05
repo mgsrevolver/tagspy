@@ -56,3 +56,14 @@ test('leaves timestamp null and order sequential', () => {
 test('ignores entries that are neither shape', () => {
   assert.deepEqual(decodeDataLayer([null, 'string', 42, {}, { notAnEvent: 1 }]), []);
 });
+
+test('unifies consent vocabulary on gtag consent events', () => {
+  const [e] = decodeDataLayer([{ 0: 'consent', 1: 'default', 2: { ad_storage: 'denied', analytics_storage: 'granted', wait_for_update: 500 } }]);
+  assert.deepEqual(e.consent, { ads: 'denied', analytics: 'granted' });
+  assert.equal(e.params.ad_storage, 'denied'); // raw params preserved
+});
+
+test('consent stays null when a consent call carries no storage keys', () => {
+  const [e] = decodeDataLayer([{ 0: 'consent', 1: 'default', 2: { wait_for_update: 500 } }]);
+  assert.equal(e.consent, null);
+});

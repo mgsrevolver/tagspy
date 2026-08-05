@@ -65,3 +65,10 @@ test('prefers the dl param for pageUrl', () => {
 test('skips hits with no event name', () => {
   assert.deepEqual(ga4.decode(req('https://a.google-analytics.com/g/collect?tid=G-A&v=2')), []);
 });
+
+test('decodes unset consent from gcs dashes', () => {
+  const [e] = ga4.decode(req('https://a.google-analytics.com/g/collect?tid=G-A&en=x&gcs=G1--'));
+  assert.deepEqual(e.consent, { ads: 'unset', analytics: 'unset' });
+  const [mixed] = ga4.decode(req('https://a.google-analytics.com/g/collect?tid=G-A&en=x&gcs=G1-1'));
+  assert.deepEqual(mixed.consent, { ads: 'unset', analytics: 'granted' });
+});
