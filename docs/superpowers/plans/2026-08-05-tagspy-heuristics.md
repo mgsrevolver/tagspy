@@ -124,7 +124,9 @@ function consentFromStorageParams(params) {
   const mapping = { ad_storage: 'ads', analytics_storage: 'analytics' };
   const out = {};
   for (const [key, name] of Object.entries(mapping)) {
-    if (params[key] === 'granted' || params[key] === 'denied') out[name] = params[key];
+    // Some CMPs emit 'GRANTED'/'Denied' — normalize before matching.
+    const value = typeof params[key] === 'string' ? params[key].toLowerCase() : params[key];
+    if (value === 'granted' || value === 'denied') out[name] = value;
   }
   return Object.keys(out).length ? out : null;
 }
@@ -199,6 +201,11 @@ test('a keyed object without an event is a bare push, not noise', () => {
   const [e] = decodeDataLayer([{ notAnEvent: 1 }]);
   assert.equal(e.eventName, 'datalayer.push');
   assert.deepEqual(e.params, { notAnEvent: 1 });
+});
+
+test('normalizes CMP-cased consent values', () => {
+  const [e] = decodeDataLayer([{ 0: 'consent', 1: 'update', 2: { ad_storage: 'GRANTED', analytics_storage: 'Denied' } }]);
+  assert.deepEqual(e.consent, { ads: 'granted', analytics: 'denied' });
 });
 ```
 
