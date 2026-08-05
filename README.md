@@ -8,8 +8,16 @@ Successor to [ConsoleSpy](https://github.com/mgsrevolver/consolespy).
 
 ## Status
 
-Early. GA4 and GTM dataLayer are supported. Meta, Google Ads, TikTok, and
-LinkedIn adapters, plus assertions against a tracking plan, are planned.
+Twelve advisory rules across two channels. **Wire rules** read the network hits
+(ground truth for what was sent): duplicate-event, revenue-without-currency,
+dead-property, malformed-hit, event-name-length, debug-mode-in-prod,
+placeholder-param, consent-suppression, utm-loss. **Container rules** read the
+GTM dataLayer (ground truth for implementation hygiene): naming-collision,
+push-before-init, ecommerce-not-cleared. One logical defect produces one
+finding, not one per channel.
+
+Meta, Google Ads, TikTok, and LinkedIn adapters, cross-platform-gap, and
+assertions against a tracking plan are planned.
 
 ## Usage
 

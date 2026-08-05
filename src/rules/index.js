@@ -9,11 +9,12 @@ import * as consentSuppression from './consent-suppression.js';
 import * as namingCollision from './naming-collision.js';
 import * as pushBeforeInit from './push-before-init.js';
 import * as ecommerceNotCleared from './ecommerce-not-cleared.js';
+import * as utmLoss from './utm-loss.js';
 
 export const RULES = [
   duplicateEvent, revenueWithoutCurrency, deadProperty, malformedHit,
   eventNameLength, debugModeInProd, placeholderParam, consentSuppression,
-  namingCollision, pushBeforeInit, ecommerceNotCleared,
+  namingCollision, pushBeforeInit, ecommerceNotCleared, utmLoss,
 ];
 
 export function runRules(events, ctx = {}) {
