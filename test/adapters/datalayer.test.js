@@ -54,7 +54,7 @@ test('leaves timestamp null and order sequential', () => {
 });
 
 test('ignores entries that are neither shape', () => {
-  assert.deepEqual(decodeDataLayer([null, 'string', 42, {}, { notAnEvent: 1 }]), []);
+  assert.deepEqual(decodeDataLayer([null, 'string', 42, {}]), []);
 });
 
 test('unifies consent vocabulary on gtag consent events', () => {
@@ -66,4 +66,47 @@ test('unifies consent vocabulary on gtag consent events', () => {
 test('consent stays null when a consent call carries no storage keys', () => {
   const [e] = decodeDataLayer([{ 0: 'consent', 1: 'default', 2: { wait_for_update: 500 } }]);
   assert.equal(e.consent, null);
+});
+
+test("keeps the payload of gtag('set', {...})", () => {
+  const [e] = decodeDataLayer([{ 0: 'set', 1: { currency: 'USD', country: 'US' } }]);
+  assert.equal(e.eventName, 'gtag.set');
+  assert.deepEqual(e.params, { currency: 'USD', country: 'US' });
+});
+
+test('decodes sparse arguments objects without truncating', () => {
+  const [e] = decodeDataLayer([{ 0: 'config', 2: { send_page_view: false } }]);
+  assert.equal(e.eventName, 'gtag.config');
+  assert.equal(e.params.send_page_view, false);
+});
+
+test('emits datalayer.push for eventless object pushes', () => {
+  const events = decodeDataLayer([{ ecommerce: { value: 12, items: [] } }]);
+  assert.equal(events.length, 1);
+  assert.equal(events[0].eventName, 'datalayer.push');
+  assert.equal(events[0].params.value, 12); // hoisted
+});
+
+test('the canonical ecommerce clear is visible', () => {
+  const [e] = decodeDataLayer([{ ecommerce: null }]);
+  assert.equal(e.eventName, 'datalayer.push');
+  assert.equal(e.params.ecommerce, null);
+});
+
+test('hoists nested ecommerce params on named events without clobbering', () => {
+  const [e] = decodeDataLayer([{ event: 'purchase', value: 99, ecommerce: { value: 89, currency: 'USD', transaction_id: 'T-1' } }]);
+  assert.equal(e.params.value, 99); // explicit top-level wins
+  assert.equal(e.params.currency, 'USD');
+  assert.equal(e.params.transaction_id, 'T-1');
+});
+
+test('a keyed object without an event is a bare push, not noise', () => {
+  const [e] = decodeDataLayer([{ notAnEvent: 1 }]);
+  assert.equal(e.eventName, 'datalayer.push');
+  assert.deepEqual(e.params, { notAnEvent: 1 });
+});
+
+test('normalizes CMP-cased consent values', () => {
+  const [e] = decodeDataLayer([{ 0: 'consent', 1: 'update', 2: { ad_storage: 'GRANTED', analytics_storage: 'Denied' } }]);
+  assert.deepEqual(e.consent, { ads: 'granted', analytics: 'denied' });
 });
