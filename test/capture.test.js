@@ -30,11 +30,26 @@ test('drops requests with no url and defaults method to GET', () => {
   assert.equal(out.requests[0].method, 'GET');
 });
 
-test('falls back to array index when timestamp is missing', () => {
+test('leaves timestamp null when the capture recorded none', () => {
   const out = loadCapture({
     version: 1,
     requests: [{ url: 'https://a.test/' }, { url: 'https://b.test/', timestamp: 500 }],
   });
-  assert.equal(out.requests[0].timestamp, 0);
+  assert.equal(out.requests[0].timestamp, null);
   assert.equal(out.requests[1].timestamp, 500);
+});
+
+test('preserves a zero timestamp', () => {
+  const out = loadCapture({ version: 1, requests: [{ url: 'https://a.test/', timestamp: 0 }] });
+  assert.equal(out.requests[0].timestamp, 0);
+});
+
+test('rejects an empty url', () => {
+  const out = loadCapture({ version: 1, requests: [{ url: '' }, { url: 'https://a.test/' }] });
+  assert.equal(out.requests.length, 1);
+  assert.equal(out.requests[0].url, 'https://a.test/');
+});
+
+test('rejects a non-array dataLayer', () => {
+  assert.throws(() => loadCapture({ version: 1, dataLayer: 'nope' }), CaptureError);
 });

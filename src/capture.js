@@ -16,12 +16,15 @@ export function loadCapture(raw) {
     version: 1,
     capturedAt: raw.capturedAt ?? null,
     requests: requests
-      .filter((r) => r && typeof r.url === 'string')
-      .map((r, i) => ({
+      .filter((r) => r && typeof r.url === 'string' && r.url !== '')
+      .map((r) => ({
         url: r.url,
         method: typeof r.method === 'string' ? r.method : 'GET',
         body: typeof r.body === 'string' ? r.body : null,
-        timestamp: Number.isFinite(r.timestamp) ? r.timestamp : i,
+        // null, never an index: a position is not a millisecond. Windowed
+        // rules must skip events whose timestamp is unknowable rather than
+        // compare array offsets as if they were elapsed time.
+        timestamp: Number.isFinite(r.timestamp) ? r.timestamp : null,
         pageUrl: typeof r.pageUrl === 'string' ? r.pageUrl : null,
       })),
     dataLayer,
