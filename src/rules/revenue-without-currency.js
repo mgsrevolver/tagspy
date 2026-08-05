@@ -5,6 +5,7 @@ export const id = 'revenue-without-currency';
 export function run(events) {
   const findings = [];
   for (const event of events) {
+    if (event.platform === 'datalayer') continue; // wire rule: the network hit is ground truth
     const { value, currency } = event.params;
     if (value === undefined || value === null) continue;
     if (currency) continue;

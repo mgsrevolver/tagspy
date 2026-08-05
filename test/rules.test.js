@@ -78,3 +78,26 @@ test('every finding carries a waive key and a suggestion', () => {
     assert.equal(typeof f.suggestion, 'string');
   }
 });
+
+test('does not flag the same event on different pages', () => {
+  const events = [
+    ga4Event({ eventName: 'page_view', params: {}, timestamp: 1000, pageUrl: 'https://a.test/one' }),
+    ga4Event({ eventName: 'page_view', params: {}, timestamp: 1300, pageUrl: 'https://a.test/two' }),
+  ];
+  assert.ok(!ids(runRules(events)).includes('duplicate-event'));
+});
+
+test('collapses a burst into a single counted finding', () => {
+  const events = [0, 400, 800, 1200].map((t) =>
+    ga4Event({ eventName: 'purchase', params: { transaction_id: 'T-1' }, timestamp: t }));
+  const found = runRules(events).filter((f) => f.rule === 'duplicate-event');
+  assert.equal(found.length, 1);
+  assert.match(found[0].message, /fired 4 times/);
+});
+
+test('revenue-without-currency is a wire rule and skips the dataLayer shadow', () => {
+  const events = [
+    tagEvent({ platform: 'datalayer', eventName: 'purchase', params: { value: 89 }, timestamp: null, order: 0 }),
+  ];
+  assert.ok(!ids(runRules(events)).includes('revenue-without-currency'));
+});
