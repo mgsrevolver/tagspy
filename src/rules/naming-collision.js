@@ -32,7 +32,9 @@ export function run(events) {
 
   const normalized = new Map();
   for (const name of names) {
-    const norm = name.toLowerCase().replace(/_/g, '');
+    // Underscores AND hyphens: GA4 names don't allow hyphens, so add-to-cart
+    // vs add_to_cart is a real collision, not a style choice.
+    const norm = name.toLowerCase().replace(/[_-]/g, '');
     if (normalized.has(norm) && normalized.get(norm) !== name) {
       findings.push(finding({
         rule: id,
@@ -46,8 +48,11 @@ export function run(events) {
     }
   }
 
-  const camel = names.filter((n) => CAMEL.test(n));
-  const snake = names.filter((n) => n.includes('_'));
+  // A name that is BOTH camel and snake (myEvent_v2) belongs to neither pure
+  // convention — counting it in both manufactured a self-collision mix
+  // finding on otherwise-uniform containers.
+  const camel = names.filter((n) => CAMEL.test(n) && !n.includes('_'));
+  const snake = names.filter((n) => n.includes('_') && !CAMEL.test(n));
   if (camel.length && snake.length) {
     findings.push(finding({
       rule: id,

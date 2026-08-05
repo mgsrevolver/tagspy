@@ -36,6 +36,17 @@ test('one clean convention produces no naming findings', () => {
   assert.ok(!ids(runRules(events)).includes('naming-collision'));
 });
 
+test('a single mixed-style name is not a convention mix with itself', () => {
+  const events = [dl('myEvent_v2')];
+  assert.ok(!ids(runRules(events)).includes('naming-collision'));
+});
+
+test('hyphen and underscore variants collide', () => {
+  const events = [dl('add-to-cart'), dl('add_to_cart', {}, 1)];
+  const found = runRules(events).filter((f) => f.rule === 'naming-collision');
+  assert.ok(found.some((f) => /collide/.test(f.message)));
+});
+
 test('flags a business event pushed before container init', () => {
   const events = [dl('early_signup', {}, 0), dl('gtm.js', {}, 1)];
   const found = runRules(events).find((f) => f.rule === 'push-before-init');
