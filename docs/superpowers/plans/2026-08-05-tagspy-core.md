@@ -1367,7 +1367,7 @@ git commit -m "feat: report renderer and audit CLI"
 
 | Plan | Scope |
 | --- | --- |
-| 2 | `naming-collision`, `placeholder-param`, `cross-platform-gap`, `utm-loss`, `consent-suppression`, `push-before-init`, `ecommerce-not-cleared` |
+| 2 | `naming-collision`, `placeholder-param`, `cross-platform-gap`, `utm-loss`, `consent-suppression`, `push-before-init`, `ecommerce-not-cleared`. Also from live capture: `event-name-length` (GA4 truncates at 40 chars — observed on shop.merch.google) and `debug-mode-in-prod` (`ep.debug_mode=True` observed in production). **Carried review deferral:** `decodeConsent` collapses `gcs=G1--` (CMP unset) into `null`, indistinguishable from "no consent signaling" — the consent-suppression rule needs the adapter to decode dashes as `'unset'` first. |
 | 3 | Meta, Google Ads, TikTok, LinkedIn adapters (registry and rules already accept them unchanged) |
 | 4 | `tracking-plan.yml` loader, assertions, `once_per` scopes, waivers, exit codes, spec bootstrapping |
 | 5 | The Claude Code skill: driving the browser, walking a funnel, writing the capture envelope |
