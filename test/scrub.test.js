@@ -30,10 +30,11 @@ test('redacts identifiers observed in live Google Ads traffic', () => {
 });
 
 test('redacts per-hit cache busters and join ids from legacy protocols', () => {
-  const out = scrubUrl('https://a.test/j/collect?tid=UA-1&a=1382392921&z=1422968210&rnd=1786573501&t=pageview');
-  assert.match(out, /a=REDACTED/);
+  const out = scrubUrl('https://a.test/j/collect?tid=UA-1&a=1382392921&z=1422968210&rnd=1786573501&random=1785955667706&t=pageview');
+  assert.match(out, /(^|&)a=REDACTED/);
   assert.match(out, /z=REDACTED/);
   assert.match(out, /rnd=REDACTED/);
+  assert.match(out, /random=REDACTED/);
   assert.match(out, /tid=UA-1/);
   assert.match(out, /t=pageview/);
 });
