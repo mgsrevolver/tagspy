@@ -495,6 +495,32 @@ test('flags consent mode declared in the container but absent from every hit', (
   assert.match(found.message, /consent/i);
 });
 
+test('debug-mode ignores explicit falsy encodings', () => {
+  const events = [
+    ga4Event({ eventName: 'x', params: { debug_mode: 0 } }),
+    ga4Event({ eventName: 'x', params: { debug_mode: '' }, account: 'G-B' }),
+    ga4Event({ eventName: 'x', params: { debug_mode: 'False' }, account: 'G-C' }),
+  ];
+  assert.ok(!ids(runRules(events)).includes('debug-mode-in-prod'));
+});
+
+test('placeholder findings are account-scoped', () => {
+  const events = [
+    ga4Event({ eventName: 'purchase', params: { transaction_id: 'undefined' } }),
+    ga4Event({ eventName: 'purchase', params: { transaction_id: 'undefined' }, account: 'G-B', timestamp: 50000 }),
+  ];
+  assert.equal(runRules(events).filter((f) => f.rule === 'placeholder-param').length, 2);
+});
+
+test('wire truncation and its container source collapse to one finding', () => {
+  const full = 'custom_event_with_a_name_over_40_characters';
+  const events = [
+    tagEvent({ platform: 'datalayer', eventName: full, timestamp: null, order: 0 }),
+    ga4Event({ eventName: full.slice(0, 40) }),
+  ];
+  assert.equal(runRules(events).filter((f) => f.rule === 'event-name-length').length, 1);
+});
+
 test('stays silent when hits do carry consent state', () => {
   const events = [
     tagEvent({ platform: 'datalayer', eventName: 'gtag.consent.default', params: {}, timestamp: null, order: 0 }),
@@ -520,12 +546,14 @@ const INTERNAL = /^(gtm\.|gtag\.)|^datalayer\.push$/;
 
 export function run(events) {
   const findings = [];
+  // Dedupe on the 40-char prefix: a truncated wire name and its full-length
+  // container source are the same defect and must yield one finding.
   const seen = new Set();
   for (const event of events) {
     const name = event.eventName;
-    if (!name || INTERNAL.test(name) || seen.has(`${event.platform}:${name}`)) continue;
+    if (!name || INTERNAL.test(name) || seen.has(name.slice(0, GA4_LIMIT))) continue;
     if (event.platform !== 'datalayer' && name.length === GA4_LIMIT) {
-      seen.add(`${event.platform}:${name}`);
+      seen.add(name.slice(0, GA4_LIMIT));
       findings.push(finding({
         rule: id,
         message: `${name} is exactly ${GA4_LIMIT} characters — GA4's limit — and was likely truncated from a longer name`,
@@ -534,7 +562,7 @@ export function run(events) {
         waiveKey: `${id}:${name}`,
       }));
     } else if (event.platform === 'datalayer' && name.length > GA4_LIMIT) {
-      seen.add(`${event.platform}:${name}`);
+      seen.add(name.slice(0, GA4_LIMIT));
       findings.push(finding({
         rule: id,
         message: `${name} is ${name.length} characters; GA4 will truncate it to ${GA4_LIMIT}`,
@@ -561,7 +589,9 @@ export function run(events) {
   for (const event of events) {
     if (event.platform === 'datalayer') continue; // wire rule
     const dm = event.params.debug_mode;
-    if (dm === undefined || dm === false || dm === 'false' || dm === '0') continue;
+    if (dm === undefined || dm === null) continue;
+    // The wire sends strings ('True', 'False', '0') — normalize before judging.
+    if (['', '0', 'false'].includes(String(dm).trim().toLowerCase())) continue;
     const account = event.account ?? '(unknown)';
     if (seen.has(account)) continue;
     seen.add(account);
@@ -593,7 +623,8 @@ export function run(events) {
     if (event.platform === 'datalayer') continue; // wire rule
     for (const [key, value] of Object.entries(event.params)) {
       if (typeof value !== 'string' || !PLACEHOLDERS.has(value.trim().toLowerCase())) continue;
-      const dedupe = `${event.platform}:${event.eventName}:${key}`;
+      // Account-scoped: the same broken mapping on two properties is two defects.
+      const dedupe = `${event.account ?? ''}:${event.platform}:${event.eventName}:${key}`;
       if (seen.has(dedupe)) continue;
       seen.add(dedupe);
       findings.push(finding({
@@ -604,8 +635,8 @@ export function run(events) {
         waiveKey: `${id}:${event.eventName ?? ''}:${key}`,
       }));
     }
-    if (event.eventName === 'purchase' && event.params.value === 0 && !seen.has('purchase:zero')) {
-      seen.add('purchase:zero');
+    if (event.eventName === 'purchase' && event.params.value === 0 && !seen.has(`purchase:zero:${event.account ?? ''}`)) {
+      seen.add(`purchase:zero:${event.account ?? ''}`);
       findings.push(finding({
         rule: id,
         message: 'purchase fired with value=0 — revenue is being reported as zero',
