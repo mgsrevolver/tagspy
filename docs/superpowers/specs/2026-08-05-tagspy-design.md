@@ -1,4 +1,4 @@
-# taglint — design
+# tagspy — design
 
 **Date:** 2026-08-05
 **Status:** approved, pending implementation plan
@@ -15,7 +15,7 @@ Coding agents can now read browser network traffic (Chrome DevTools MCP, Claude 
 
 A Claude Code plugin. The agent walks a funnel on demand, decodes every tag hit into one normalized event model, and evaluates it on two independent channels.
 
-**Non-goal: building capture.** Capture is borrowed from the browser MCP the user already has. Everything taglint owns is a pure function over recorded data. This is a deliberate reaction to the predecessor project (ConsoleSpy, archived 2026-08-05), which spent its complexity budget on plumbing — two processes, a hardcoded port in four files, an SSE bridge — and was made redundant when vendors shipped the plumbing for free.
+**Non-goal: building capture.** Capture is borrowed from the browser MCP the user already has. Everything tagspy owns is a pure function over recorded data. This is a deliberate reaction to the predecessor project (ConsoleSpy, archived 2026-08-05), which spent its complexity budget on plumbing — two processes, a hardcoded port in four files, an SSE bridge — and was made redundant when vendors shipped the plumbing for free.
 
 ### Correctness model: two channels, never conflated
 
@@ -145,6 +145,10 @@ Real captured material available as seed fixtures (from `roll20.net`, 2026-08-05
 - Microsoft Clarity (`e.clarity.ms/collect`) present — a platform not in v1 scope, and a test that unknown traffic is ignored rather than fatal
 
 **Fixture hygiene:** scrub `cid`, `sid`, and any user or session identifiers before committing. Measurement IDs are public (readable in page source) and may stay.
+
+**Purchase fixtures are hand-authored.** Capturing a real `purchase` hit requires completing a real checkout, which is out of bounds. So `purchase` fixtures are synthesized from the GA4 Measurement Protocol and Meta Conversions API references, and every rule that depends on them — `duplicate-event` keyed on `transaction_id`, `revenue-without-currency`, `cross-platform-gap` — is verified against synthetic data only.
+
+This is the weakest link in the test strategy and the spec says so deliberately: vendor docs do not always match what `gtag.js` and `fbevents.js` actually emit in the wild, and the roll20 pass already produced one example of exactly that gap (`gtag()` arguments-objects in the dataLayer, documented nowhere obvious). Pre-purchase events (`view_item`, `add_to_cart`, `begin_checkout`) capture freely from any public storefront and should be sourced live. Treat purchase-path rules as lower-confidence until a real hit is available from a staging environment.
 
 ## Error handling
 
