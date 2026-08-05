@@ -1,13 +1,13 @@
-# Resume notes — core pipeline shipped 2026-08-05
+# Resume notes — Plans 1 and 2 shipped 2026-08-05
 
 ## Where things stand
 
 | | |
 | --- | --- |
 | Repo | `/Users/clay/Documents/projects/tagspy` (standalone; unrelated to the archived consolespy repo) |
-| Branch | `main` — `feat/core-pipeline` merged and deleted |
+| Branch | `main` — `feat/core-pipeline` and `feat/heuristics` both merged and deleted |
 | Remote | none yet — local only |
-| Tests | 55/55 (`npm test`), including 5 CLI end-to-end tests |
+| Tests | 100/100 (`npm test`), including CLI end-to-end tests over both real fixtures |
 | Works | `node bin/tagspy.js audit <capture.json>` |
 
 The core pipeline is complete: capture envelope → GA4 + dataLayer adapters →
