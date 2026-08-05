@@ -755,7 +755,7 @@ git commit -m "feat: dataLayer adapter handling both entry shapes"
 
 **Interfaces:**
 - Consumes: `loadCapture` (Task 1), `ga4` adapter (Task 3), `decodeDataLayer` (Task 4)
-- Produces: `decodeCapture(capture) → { events: TagEvent[], errors: {url, message}[] }`
+- Produces: `decodeCapture(capture, { adapters } = {}) → { events: TagEvent[], errors: {url, message}[] }`. The `adapters` option defaults to the built-in registry and exists so the error path is testable — `URL` and `URLSearchParams` are lenient and will not throw on malformed query strings, so a real decode failure cannot be provoked by input alone.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -794,18 +794,22 @@ test('combines network and dataLayer events with monotonic order', () => {
 });
 
 test('records a decode error instead of throwing', () => {
-  const capture = {
-    version: 1,
-    capturedAt: null,
-    dataLayer: [],
-    requests: [{ url: 'https://a.google-analytics.com/g/collect?tid=G-A&en=x', method: 'GET', body: null, timestamp: 1, pageUrl: null }],
+  // URL and URLSearchParams are lenient and never throw on malformed query
+  // strings, so a decode failure has to be injected rather than provoked.
+  const exploding = {
+    id: 'exploding',
+    matches: () => true,
+    decode: () => { throw new Error('bad encoding'); },
   };
-  // Force a decode failure by handing the adapter a url it matches but cannot parse further.
-  const broken = { ...capture, requests: [{ ...capture.requests[0], url: 'https://a.google-analytics.com/g/collect?%' }] };
-  const { events, errors } = decodeCapture(broken);
+  const capture = loadCapture({
+    version: 1,
+    requests: [{ url: 'https://a.google-analytics.com/g/collect?tid=G-A&en=x', timestamp: 1 }],
+  });
+  const { events, errors } = decodeCapture(capture, { adapters: [exploding] });
   assert.deepEqual(events, []);
   assert.equal(errors.length, 1);
-  assert.match(errors[0].message, /.+/);
+  assert.equal(errors[0].message, 'bad encoding');
+  assert.match(errors[0].url, /g\/collect/);
 });
 ```
 
@@ -824,12 +828,12 @@ import { decodeDataLayer } from './adapters/datalayer.js';
 
 const NETWORK_ADAPTERS = [ga4];
 
-export function decodeCapture(capture) {
+export function decodeCapture(capture, { adapters = NETWORK_ADAPTERS } = {}) {
   const events = [];
   const errors = [];
 
   for (const req of capture.requests) {
-    const adapter = NETWORK_ADAPTERS.find((a) => a.matches(req.url));
+    const adapter = adapters.find((a) => a.matches(req.url));
     if (!adapter) continue; // unrecognized traffic is never fatal
     try {
       events.push(...adapter.decode(req));
