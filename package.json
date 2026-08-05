@@ -1,0 +1,10 @@
+{
+  "name": "tagspy",
+  "version": "0.1.0",
+  "description": "Audit marketing tag implementations from captured browser traffic",
+  "license": "MIT",
+  "type": "module",
+  "bin": { "tagspy": "./bin/tagspy.js" },
+  "scripts": { "test": "node --test test/" },
+  "engines": { "node": ">=22" }
+}
