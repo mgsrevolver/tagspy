@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "capturedAt": "2026-08-05T20:00:00.000Z",
+  "_source": "synthetic demo capture for a fictional storefront — every defect below is planted deliberately so the audit output is reproducible",
+  "requests": [
+    {
+      "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-DEMO12345&en=page_view&dl=https%3A%2F%2Fshop.example.com%2F&dt=Home",
+      "method": "POST",
+      "timestamp": 1000,
+      "pageUrl": "https://shop.example.com/"
+    },
+    {
+      "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-DEMO12345&en=user_engagement&dl=https%3A%2F%2Fshop.example.com%2F%3Futm_source%3Dnewsletter%26utm_campaign%3Dsummer-sale&ep.debug_mode=True",
+      "method": "POST",
+      "timestamp": 2500,
+      "pageUrl": "https://shop.example.com/?utm_source=newsletter&utm_campaign=summer-sale"
+    },
+    {
+      "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-DEMO12345&en=purchase&ep.transaction_id=T-1001&epn.value=59.99&cu=USD&pr1=idSKU-100~nmCanvas%20Tote~pr24~qt1&dl=https%3A%2F%2Fshop.example.com%2Fcheckout%2Fthanks",
+      "method": "POST",
+      "timestamp": 61000,
+      "pageUrl": "https://shop.example.com/checkout/thanks"
+    },
+    {
+      "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-DEMO12345&en=purchase&ep.transaction_id=T-1001&epn.value=59.99&cu=USD&pr1=idSKU-100~nmCanvas%20Tote~pr24~qt1&dl=https%3A%2F%2Fshop.example.com%2Fcheckout%2Fthanks",
+      "method": "POST",
+      "timestamp": 61350,
+      "pageUrl": "https://shop.example.com/checkout/thanks"
+    },
+    {
+      "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-DEMO12345&en=purchase&ep.transaction_id=T-2002&epn.value=89.00&dl=https%3A%2F%2Fshop.example.com%2Fcheckout%2Fthanks",
+      "method": "POST",
+      "timestamp": 64000,
+      "pageUrl": "https://shop.example.com/checkout/thanks"
+    },
+    {
+      "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-DEMO12345&en=purchase&ep.transaction_id=undefined&epn.value=12.50&cu=USD&dl=https%3A%2F%2Fshop.example.com%2Fcheckout%2Fthanks",
+      "method": "POST",
+      "timestamp": 67000,
+      "pageUrl": "https://shop.example.com/checkout/thanks"
+    }
+  ],
+  "dataLayer": [
+    { "event": "signupComplete", "gtm.uniqueEventId": 1 },
+    { "gtm.start": 1785955200000, "event": "gtm.js", "gtm.uniqueEventId": 2 },
+    { "0": "config", "1": "UA-1234567-1", "2": { "send_page_view": false } },
+    { "event": "view_item", "ecommerce": { "items": [{ "item_id": "SKU-100", "item_name": "Canvas Tote", "price": 24 }] } },
+    { "event": "add_to_cart", "ecommerce": { "items": [{ "item_id": "SKU-100", "item_name": "Canvas Tote", "price": 24 }] } },
+    { "event": "begin_checkout" }
+  ]
+}
