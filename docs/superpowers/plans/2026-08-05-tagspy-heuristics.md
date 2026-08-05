@@ -244,7 +244,9 @@ and use `plainObject(payload2)` for `params`. Then in `decodeDataLayer`'s per-en
     if (!('event' in entry)) {
       const params = {};
       for (const [key, value] of Object.entries(entry)) {
-        if (key.startsWith('gtm.')) continue;
+        // __proto__ assignment would poison the params prototype and let a
+        // hostile capture file fabricate findings.
+        if (key.startsWith('gtm.') || key === '__proto__') continue;
         params[key] = value;
       }
       if (Object.keys(params).length) {
@@ -552,7 +554,9 @@ export function run(events) {
   for (const event of events) {
     const name = event.eventName;
     if (!name || INTERNAL.test(name) || seen.has(name.slice(0, GA4_LIMIT))) continue;
-    if (event.platform !== 'datalayer' && name.length === GA4_LIMIT) {
+    // GA4's limit is characters, not UTF-16 units — spread to count codepoints.
+    const len = [...name].length;
+    if (event.platform !== 'datalayer' && len === GA4_LIMIT) {
       seen.add(name.slice(0, GA4_LIMIT));
       findings.push(finding({
         rule: id,
@@ -561,11 +565,11 @@ export function run(events) {
         suggestion: 'Rename the source event to 40 characters or fewer; the truncated form is what all reports will show.',
         waiveKey: `${id}:${name}`,
       }));
-    } else if (event.platform === 'datalayer' && name.length > GA4_LIMIT) {
+    } else if (event.platform === 'datalayer' && len > GA4_LIMIT) {
       seen.add(name.slice(0, GA4_LIMIT));
       findings.push(finding({
         rule: id,
-        message: `${name} is ${name.length} characters; GA4 will truncate it to ${GA4_LIMIT}`,
+        message: `${name} is ${len} characters; GA4 will truncate it to ${GA4_LIMIT}`,
         evidence: ['(dataLayer)'],
         suggestion: 'Rename the event to 40 characters or fewer before it reaches the tag.',
         waiveKey: `${id}:${name}`,
@@ -663,10 +667,15 @@ export function run(events) {
   );
   if (!declared) return [];
   const wire = events.filter((e) => e.platform !== 'datalayer');
-  if (!wire.length || !wire.every((e) => e.consent === null)) return [];
+  if (!wire.length) return [];
+  // 'unset' means the CMP never resolved before the hit fired — consent
+  // state failing to reach the tags, exactly like null. Only a resolved
+  // granted/denied value proves the integration works.
+  const resolved = (c) => c !== null && Object.values(c).some((v) => v === 'granted' || v === 'denied');
+  if (wire.some((e) => resolved(e.consent))) return [];
   return [finding({
     rule: id,
-    message: 'consent mode is declared in the container, but no network hit carries any consent state',
+    message: 'consent mode is declared in the container, but no network hit carries a resolved consent state',
     evidence: wire.slice(0, 3).map((e) => e.raw.url ?? '(dataLayer)'),
     suggestion: 'The consent signal is not reaching the tags — verify the consent-mode integration fires before the tags do.',
     waiveKey: id,
@@ -821,9 +830,12 @@ import { finding } from '../findings.js';
 
 export const id = 'naming-collision';
 
+// page_view and click are deliberately absent: pushing {event:'page_view'}
+// for SPA virtual pageviews and click-trigger events is mainstream GTM
+// practice, not a defect — flagging them would cry wolf on most containers.
 const GA4_AUTO = new Set([
-  'page_view', 'session_start', 'first_visit', 'user_engagement', 'scroll',
-  'click', 'file_download', 'form_start', 'form_submit', 'video_start',
+  'session_start', 'first_visit', 'user_engagement', 'scroll',
+  'file_download', 'form_start', 'form_submit', 'video_start',
   'video_progress', 'video_complete', 'view_search_results',
 ]);
 const INTERNAL = /^(gtm\.|gtag\.)|^datalayer\.push$/;
@@ -1048,11 +1060,12 @@ Register in `src/rules/index.js` (12 rules total).
 ```markdown
 Twelve advisory rules across two channels. **Wire rules** read the network hits
 (ground truth for what was sent): duplicate-event, revenue-without-currency,
-dead-property, malformed-hit, event-name-length, debug-mode-in-prod,
-placeholder-param, consent-suppression, utm-loss. **Container rules** read the
-GTM dataLayer (ground truth for implementation hygiene): naming-collision,
-push-before-init, ecommerce-not-cleared. One logical defect produces one
-finding, not one per channel.
+malformed-hit, event-name-length, debug-mode-in-prod, placeholder-param,
+consent-suppression, utm-loss. **Container rules** read the GTM dataLayer
+(ground truth for implementation hygiene): naming-collision, push-before-init,
+ecommerce-not-cleared. **dead-property** is channel-agnostic: it reads account
+configuration from whichever channel declares it. One logical defect produces
+one finding, not one per channel.
 
 Meta, Google Ads, TikTok, and LinkedIn adapters, cross-platform-gap, and
 assertions against a tracking plan are planned.
