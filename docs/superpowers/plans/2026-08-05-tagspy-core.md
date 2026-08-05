@@ -257,6 +257,14 @@ test('redacts click and pixel identifiers', () => {
   assert.match(out, /ev=Purchase/);
 });
 
+test('redacts identifiers observed in live Google Ads traffic', () => {
+  const out = scrubUrl('https://a.test/ccm/collect?auid=195.178&ecid=1225&_gid=165.178&en=page_view');
+  assert.match(out, /auid=REDACTED/);
+  assert.match(out, /ecid=REDACTED/);
+  assert.match(out, /_gid=REDACTED/);
+  assert.match(out, /en=page_view/);
+});
+
 test('returns unparseable input unchanged', () => {
   assert.equal(scrubUrl('not a url'), 'not a url');
 });
@@ -276,6 +284,8 @@ const SENSITIVE_PARAMS = new Set([
   'cid', 'sid', 'uid', '_p', '_fid',
   'gclid', 'dclid', 'wbraid', 'gbraid',
   'fbp', 'fbc', 'external_id', 'em', 'ph',
+  // observed in live Google Ads / GA4 traffic on shop.merch.google 2026-08-05
+  'auid', 'ecid', '_gid', 'jid', 'gjid',
 ]);
 
 export function scrubUrl(url) {
@@ -297,34 +307,21 @@ export function scrubUrl(url) {
 Run: `npm test`
 Expected: PASS
 
-- [ ] **Step 5: Capture real GA4 hits from a public storefront**
+- [ ] **Step 5: Validate the already-captured GA4 fixture**
 
-Use the browser MCP. Order matters — constraint 4 says arm the reader first:
+`test/fixtures/ga4/storefront-pageview.json` already exists in the working tree — captured live from `shop.merch.google` on 2026-08-05 via Chrome DevTools MCP and scrubbed by hand. Do not modify its contents. Validate it programmatically:
 
-1. `tabs_context_mcp` with `createIfEmpty: true`.
-2. `read_network_requests` on the new tab once, to start tracking.
-3. `navigate` to `https://shop.merch.google/`. If it is unreachable, use any public Shopify storefront — they almost always run GA4. Do not use `roll20.net`: it is consent-gated and has Cloudflare in the path.
-4. `read_network_requests` with `urlPattern: "/g/collect"`, `limit: 40`.
-5. Click into a product page and read again, to capture `view_item`.
-
-Write the result to `test/fixtures/ga4/storefront-pageview.json` as a capture envelope, passing every URL through `scrubUrl` first:
-
-```json
-{
-  "version": 1,
-  "capturedAt": "2026-08-05T00:00:00.000Z",
-  "requests": [
-    {
-      "url": "https://region1.google-analytics.com/g/collect?v=2&tid=G-XXXX&cid=REDACTED&en=page_view&dl=https%3A%2F%2Fshop.example%2F&dt=Home",
-      "method": "POST",
-      "timestamp": 120
-    }
-  ],
-  "dataLayer": []
-}
+```bash
+node --input-type=module -e "
+import { loadCapture } from './src/capture.js';
+import { readFileSync } from 'node:fs';
+const capture = loadCapture(JSON.parse(readFileSync('test/fixtures/ga4/storefront-pageview.json', 'utf8')));
+console.log('requests:', capture.requests.length, 'dataLayer:', capture.dataLayer.length);
+if (capture.requests.length !== 7) throw new Error('expected 7 requests');
+"
 ```
 
-**If no GA4 hits can be captured** (consent walls are common), do not stall: write the fixture by hand from the GA4 Measurement Protocol reference, and add a comment field `"_source": "synthesized"` so the confidence gap is visible in the repo. Then continue.
+Expected output: `requests: 7 dataLayer: 0`. Also confirm no unscrubbed identifiers remain: `grep -cE '(cid|sid|auid|ecid|_gid|jid|gjid)=(?!REDACTED)' test/fixtures/ga4/storefront-pageview.json || true` should print `0` (use `grep -PcE` if plain grep rejects the lookahead, or eyeball the seven `url` fields — every listed param must read `=REDACTED`).
 
 - [ ] **Step 6: Record the roll20 dataLayer fixture**
 
@@ -381,7 +378,11 @@ const req = (url, extra = {}) => ({ url, method: 'POST', body: null, timestamp: 
 test('matches GA4 collect endpoints only', () => {
   assert.equal(ga4.matches('https://region1.google-analytics.com/g/collect?v=2'), true);
   assert.equal(ga4.matches('https://www.google-analytics.com/collect?v=1'), true);
+  // Observed live on shop.merch.google 2026-08-05 — not a region host.
+  assert.equal(ga4.matches('https://analytics.google.com/g/collect?v=2'), true);
   assert.equal(ga4.matches('https://www.facebook.com/tr/?id=1'), false);
+  // GA4-shaped transport pings on doubleclick hosts are cookie-matching, not events.
+  assert.equal(ga4.matches('https://stats.g.doubleclick.net/g/collect?v=2'), false);
   assert.equal(ga4.matches('not a url'), false);
 });
 
@@ -478,7 +479,9 @@ import { tagEvent } from '../tag-event.js';
 
 export const id = 'ga4';
 
-const GA4_HOST = /(^|\.)google-analytics\.com$/;
+// Both hosts observed in the wild: region servers use *.google-analytics.com,
+// but shop.merch.google (captured 2026-08-05) sends to analytics.google.com.
+const GA4_HOST = /(^|\.)google-analytics\.com$|^analytics\.google\.com$/;
 const GA4_PATHS = new Set(['/g/collect', '/collect', '/mp/collect']);
 
 const ITEM_FIELDS = {
