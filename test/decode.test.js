@@ -29,6 +29,23 @@ test('combines network and dataLayer events with monotonic order', () => {
   assert.deepEqual(events.map((e) => e.order), [0, 1]);
 });
 
+test('a throwing matches() disables that adapter, not the whole decode', () => {
+  const exploding = {
+    id: 'exploding-matches',
+    matches: () => { throw new Error('bad regex'); },
+    decode: () => [],
+  };
+  const capture = loadCapture({
+    version: 1,
+    requests: [{ url: 'https://a.google-analytics.com/g/collect?tid=G-A&en=page_view', timestamp: 10 }],
+  });
+  const ga4 = { id: 'ga4-stub', matches: (u) => u.includes('google-analytics'), decode: () => [{ platform: 'ga4', eventName: 'page_view', params: {}, raw: {} }] };
+  const { events, errors } = decodeCapture(capture, { adapters: [exploding, ga4] });
+  assert.equal(events.length, 1);
+  assert.equal(events[0].eventName, 'page_view');
+  assert.deepEqual(errors, []);
+});
+
 test('records a decode error instead of throwing', () => {
   // URL and URLSearchParams are lenient and never throw on malformed query
   // strings, so a decode failure has to be injected rather than provoked.
