@@ -317,6 +317,21 @@ test('collapses a burst into a single counted finding', () => {
   assert.match(found[0].message, /fired 4 times/);
 });
 
+test('unsorted input cannot manufacture duplicates', () => {
+  // t=9000 arriving before t=0 must not group: a negative delta is not "within the window".
+  const events = [9000, 0].map((t) =>
+    ga4Event({ eventName: 'purchase', params: { transaction_id: 'T-1' }, timestamp: t }));
+  assert.ok(!ids(runRules(events)).includes('duplicate-event'));
+});
+
+test('unsorted input still finds true duplicates, with a non-negative span', () => {
+  const events = [1300, 1000].map((t) =>
+    ga4Event({ eventName: 'purchase', params: { transaction_id: 'T-1' }, timestamp: t }));
+  const found = runRules(events).filter((f) => f.rule === 'duplicate-event');
+  assert.equal(found.length, 1);
+  assert.match(found[0].message, /within 300ms/);
+});
+
 test('revenue-without-currency is a wire rule and skips the dataLayer shadow', () => {
   const events = [
     tagEvent({ platform: 'datalayer', eventName: 'purchase', params: { value: 89 }, timestamp: null, order: 0 }),
@@ -351,9 +366,15 @@ export function run(events, ctx = {}) {
     }));
   };
 
-  for (const event of events) {
-    // Events with no real timestamp cannot be windowed. Position is not time.
-    if (!event.eventName || event.timestamp === null) continue;
+  // Nothing upstream guarantees chronological order — the capture file's
+  // array order is whatever the recorder wrote. Sort a copy so window
+  // deltas are always non-negative; unsorted input must not create groups.
+  const ordered = events
+    .filter((event) => event.eventName && event.timestamp !== null)
+    .slice()
+    .sort((a, b) => a.timestamp - b.timestamp);
+
+  for (const event of ordered) {
     const key = `${event.platform}|${event.account ?? ''}|${event.eventName}|${event.pageUrl ?? ''}|${dedupeKey(event)}`;
     const group = open.get(key);
     if (group && event.timestamp - group.last.timestamp <= windowMs) {
