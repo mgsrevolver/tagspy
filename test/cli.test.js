@@ -18,6 +18,7 @@ test('audits the captured roll20 dataLayer fixture end to end', () => {
   assert.equal(res.status, 0);
   assert.match(res.stdout, /Decoded 7 events across: datalayer/);
   assert.match(res.stdout, /\[dead-property\] UA-31040388-1/);
+  assert.match(res.stdout, /\[naming-collision\] container mixes naming conventions/);
   assert.equal(res.stderr, '');
 });
 
