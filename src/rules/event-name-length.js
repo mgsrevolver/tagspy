@@ -7,12 +7,14 @@ const INTERNAL = /^(gtm\.|gtag\.)|^datalayer\.push$/;
 
 export function run(events) {
   const findings = [];
+  // Dedupe on the 40-char prefix: a truncated wire name and its full-length
+  // container source are the same defect and must yield one finding.
   const seen = new Set();
   for (const event of events) {
     const name = event.eventName;
-    if (!name || INTERNAL.test(name) || seen.has(`${event.platform}:${name}`)) continue;
+    if (!name || INTERNAL.test(name) || seen.has(name.slice(0, GA4_LIMIT))) continue;
     if (event.platform !== 'datalayer' && name.length === GA4_LIMIT) {
-      seen.add(`${event.platform}:${name}`);
+      seen.add(name.slice(0, GA4_LIMIT));
       findings.push(finding({
         rule: id,
         message: `${name} is exactly ${GA4_LIMIT} characters — GA4's limit — and was likely truncated from a longer name`,
@@ -21,7 +23,7 @@ export function run(events) {
         waiveKey: `${id}:${name}`,
       }));
     } else if (event.platform === 'datalayer' && name.length > GA4_LIMIT) {
-      seen.add(`${event.platform}:${name}`);
+      seen.add(name.slice(0, GA4_LIMIT));
       findings.push(finding({
         rule: id,
         message: `${name} is ${name.length} characters; GA4 will truncate it to ${GA4_LIMIT}`,

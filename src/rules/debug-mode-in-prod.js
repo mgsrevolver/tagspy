@@ -8,7 +8,9 @@ export function run(events) {
   for (const event of events) {
     if (event.platform === 'datalayer') continue; // wire rule
     const dm = event.params.debug_mode;
-    if (dm === undefined || dm === false || dm === 'false' || dm === '0') continue;
+    if (dm === undefined || dm === null) continue;
+    // The wire sends strings ('True', 'False', '0') — normalize before judging.
+    if (['', '0', 'false'].includes(String(dm).trim().toLowerCase())) continue;
     const account = event.account ?? '(unknown)';
     if (seen.has(account)) continue;
     seen.add(account);

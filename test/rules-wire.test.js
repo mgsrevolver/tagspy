@@ -71,6 +71,32 @@ test('flags consent mode declared in the container but absent from every hit', (
   assert.match(found.message, /consent/i);
 });
 
+test('debug-mode ignores explicit falsy encodings', () => {
+  const events = [
+    ga4Event({ eventName: 'x', params: { debug_mode: 0 } }),
+    ga4Event({ eventName: 'x', params: { debug_mode: '' }, account: 'G-B' }),
+    ga4Event({ eventName: 'x', params: { debug_mode: 'False' }, account: 'G-C' }),
+  ];
+  assert.ok(!ids(runRules(events)).includes('debug-mode-in-prod'));
+});
+
+test('placeholder findings are account-scoped', () => {
+  const events = [
+    ga4Event({ eventName: 'purchase', params: { transaction_id: 'undefined' } }),
+    ga4Event({ eventName: 'purchase', params: { transaction_id: 'undefined' }, account: 'G-B', timestamp: 50000 }),
+  ];
+  assert.equal(runRules(events).filter((f) => f.rule === 'placeholder-param').length, 2);
+});
+
+test('wire truncation and its container source collapse to one finding', () => {
+  const full = 'custom_event_with_a_name_over_40_characters';
+  const events = [
+    tagEvent({ platform: 'datalayer', eventName: full, timestamp: null, order: 0 }),
+    ga4Event({ eventName: full.slice(0, 40) }),
+  ];
+  assert.equal(runRules(events).filter((f) => f.rule === 'event-name-length').length, 1);
+});
+
 test('stays silent when hits do carry consent state', () => {
   const events = [
     tagEvent({ platform: 'datalayer', eventName: 'gtag.consent.default', params: {}, timestamp: null, order: 0 }),

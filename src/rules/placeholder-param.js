@@ -11,7 +11,8 @@ export function run(events) {
     if (event.platform === 'datalayer') continue; // wire rule
     for (const [key, value] of Object.entries(event.params)) {
       if (typeof value !== 'string' || !PLACEHOLDERS.has(value.trim().toLowerCase())) continue;
-      const dedupe = `${event.platform}:${event.eventName}:${key}`;
+      // Account-scoped: the same broken mapping on two properties is two defects.
+      const dedupe = `${event.account ?? ''}:${event.platform}:${event.eventName}:${key}`;
       if (seen.has(dedupe)) continue;
       seen.add(dedupe);
       findings.push(finding({
@@ -22,8 +23,8 @@ export function run(events) {
         waiveKey: `${id}:${event.eventName ?? ''}:${key}`,
       }));
     }
-    if (event.eventName === 'purchase' && event.params.value === 0 && !seen.has('purchase:zero')) {
-      seen.add('purchase:zero');
+    if (event.eventName === 'purchase' && event.params.value === 0 && !seen.has(`purchase:zero:${event.account ?? ''}`)) {
+      seen.add(`purchase:zero:${event.account ?? ''}`);
       findings.push(finding({
         rule: id,
         message: 'purchase fired with value=0 — revenue is being reported as zero',
