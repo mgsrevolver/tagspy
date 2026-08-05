@@ -4,6 +4,10 @@ const SENSITIVE_PARAMS = new Set([
   'fbp', 'fbc', 'external_id', 'em', 'ph',
   // observed in live Google Ads / GA4 traffic on shop.merch.google 2026-08-05
   'auid', 'ecid', '_gid', 'jid', 'gjid',
+  // per-hit cache-busters / join ids in the UA and Ads wire protocols. The
+  // names are generic, but scrubUrl only ever runs on fixture prep, where
+  // over-redaction is safe and under-redaction leaks.
+  'z', 'a', 'rnd', 'random',
 ]);
 
 export function scrubUrl(url) {
