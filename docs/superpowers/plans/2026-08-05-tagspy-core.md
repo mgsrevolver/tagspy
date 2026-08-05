@@ -93,7 +93,7 @@ Every adapter produces this shape. Every rule consumes only this shape.
   "license": "MIT",
   "type": "module",
   "bin": { "tagspy": "./bin/tagspy.js" },
-  "scripts": { "test": "node --test test/" },
+  "scripts": { "test": "node --test" },
   "engines": { "node": ">=22" }
 }
 ```
