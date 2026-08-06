@@ -13,11 +13,11 @@ const run = (...args) => spawnSync(process.execPath, [CLI, ...args], {
   maxBuffer: 64 * 1024 * 1024,
 });
 
-test('audits the captured roll20 dataLayer fixture end to end', () => {
-  const res = run('audit', fixture('datalayer/roll20-homepage.json'));
+test('audits the captured the production site dataLayer fixture end to end', () => {
+  const res = run('audit', fixture('datalayer/production-homepage.json'));
   assert.equal(res.status, 0);
   assert.match(res.stdout, /Decoded 7 events across: datalayer/);
-  assert.match(res.stdout, /\[dead-property\] UA-31040388-1/);
+  assert.match(res.stdout, /\[dead-property\] UA-4455667-1/);
   assert.match(res.stdout, /\[naming-collision\] container mixes naming conventions/);
   assert.equal(res.stderr, '');
 });

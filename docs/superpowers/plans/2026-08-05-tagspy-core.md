@@ -222,7 +222,7 @@ git commit -m "feat: capture envelope loader and validator"
 
 **Files:**
 - Create: `src/scrub.js`, `test/scrub.test.js`
-- Create: `test/fixtures/ga4/storefront-pageview.json`, `test/fixtures/datalayer/roll20-homepage.json`
+- Create: `test/fixtures/ga4/storefront-pageview.json`, `test/fixtures/datalayer/production-homepage.json`
 - Test: `test/scrub.test.js`
 
 **Interfaces:**
@@ -337,23 +337,23 @@ if (capture.requests.length !== 7) throw new Error('expected 7 requests');
 
 Expected output: `requests: 7 dataLayer: 0`. Also confirm no unscrubbed identifiers remain: `grep -cE '(cid|sid|auid|ecid|_gid|jid|gjid)=(?!REDACTED)' test/fixtures/ga4/storefront-pageview.json || true` should print `0` (use `grep -PcE` if plain grep rejects the lookahead, or eyeball the seven `url` fields — every listed param must read `=REDACTED`).
 
-- [ ] **Step 6: Record the roll20 dataLayer fixture**
+- [ ] **Step 6: Record the production dataLayer fixture**
 
-These entries were captured live on 2026-08-05 and are the authority for Task 4's dual-shape handling. Create `test/fixtures/datalayer/roll20-homepage.json` verbatim:
+These entries were captured live on 2026-08-05 and are the authority for Task 4's dual-shape handling. Create `test/fixtures/datalayer/production-homepage.json` verbatim:
 
 ```json
 {
   "version": 1,
   "capturedAt": "2026-08-05T17:01:18.823Z",
-  "_source": "captured from roll20.net homepage",
+  "_source": "captured live from a production site homepage 2026-08-05; site-identifying values (measurement IDs, one event name) replaced",
   "requests": [],
   "dataLayer": [
     { "gtm.start": 1785949278432, "event": "gtm.js", "gtm.uniqueEventId": 3 },
     { "0": "js", "1": "2026-08-05T17:01:18.823Z" },
-    { "0": "config", "1": "UA-31040388-1", "2": { "cookieDomain": "auto", "send_page_view": false } },
-    { "0": "config", "1": "G-SZLSVQPSWG", "2": { "cookieDomain": "auto", "send_page_view": false } },
+    { "0": "config", "1": "UA-4455667-1", "2": { "cookieDomain": "auto", "send_page_view": false } },
+    { "0": "config", "1": "G-AB12CD34EF", "2": { "cookieDomain": "auto", "send_page_view": false } },
     { "event": "optedIn", "gtm.uniqueEventId": 7 },
-    { "event": "start_pw", "gtm.uniqueEventId": 8 },
+    { "event": "start_session", "gtm.uniqueEventId": 8 },
     { "event": "gtm.dom", "gtm.uniqueEventId": 9 }
   ]
 }
@@ -616,7 +616,7 @@ git commit -m "feat: GA4 collect adapter"
 
 - [ ] **Step 1: Write the failing test**
 
-Create `test/adapters/datalayer.test.js`. The first test uses the real roll20 capture — this is the authority for dual-shape handling:
+Create `test/adapters/datalayer.test.js`. The first test uses the real production capture — this is the authority for dual-shape handling:
 
 ```js
 import { test } from 'node:test';
@@ -624,24 +624,24 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { decodeDataLayer } from '../../src/adapters/datalayer.js';
 
-const roll20 = JSON.parse(readFileSync(new URL('../fixtures/datalayer/roll20-homepage.json', import.meta.url)));
+const production = JSON.parse(readFileSync(new URL('../fixtures/datalayer/production-homepage.json', import.meta.url)));
 
-test('decodes the real roll20 dataLayer', () => {
-  const events = decodeDataLayer(roll20.dataLayer);
+test('decodes the real production dataLayer', () => {
+  const events = decodeDataLayer(production.dataLayer);
   assert.deepEqual(events.map((e) => e.eventName), [
-    'gtm.js', 'gtag.js', 'gtag.config', 'gtag.config', 'optedIn', 'start_pw', 'gtm.dom',
+    'gtm.js', 'gtag.js', 'gtag.config', 'gtag.config', 'optedIn', 'start_session', 'gtm.dom',
   ]);
 });
 
 test('extracts accounts from numeric-keyed gtag config calls', () => {
-  const events = decodeDataLayer(roll20.dataLayer);
+  const events = decodeDataLayer(production.dataLayer);
   const accounts = events.filter((e) => e.eventName === 'gtag.config').map((e) => e.account);
-  assert.deepEqual(accounts, ['UA-31040388-1', 'G-SZLSVQPSWG']);
+  assert.deepEqual(accounts, ['UA-4455667-1', 'G-AB12CD34EF']);
 });
 
 test('carries the config payload into params', () => {
-  const events = decodeDataLayer(roll20.dataLayer);
-  const config = events.find((e) => e.account === 'G-SZLSVQPSWG');
+  const events = decodeDataLayer(production.dataLayer);
+  const config = events.find((e) => e.account === 'G-AB12CD34EF');
   assert.equal(config.params.send_page_view, false);
 });
 
@@ -710,7 +710,7 @@ export function decodeDataLayer(entries, ctx = {}) {
 }
 
 // gtag() pushes its `arguments` object, which serializes to numeric keys with
-// no `length` property. Verified live on roll20.net 2026-08-05.
+// no `length` property. Verified live on a production site 2026-08-05.
 function asGtagCall(entry) {
   if (Array.isArray(entry)) return entry.length ? [...entry] : null;
   if (typeof entry[0] !== 'string') return null;
@@ -948,7 +948,7 @@ import { tagEvent } from '../src/tag-event.js';
 import { runRules } from '../src/rules/index.js';
 import { decodeDataLayer } from '../src/adapters/datalayer.js';
 
-const roll20 = JSON.parse(readFileSync(new URL('./fixtures/datalayer/roll20-homepage.json', import.meta.url)));
+const production = JSON.parse(readFileSync(new URL('./fixtures/datalayer/production-homepage.json', import.meta.url)));
 
 const ga4Event = (fields) => tagEvent({ platform: 'ga4', account: 'G-A', timestamp: 0, ...fields });
 const ids = (findings) => findings.map((f) => f.rule);
@@ -997,14 +997,14 @@ test('accepts revenue with currency', () => {
   assert.ok(!ids(runRules(events)).includes('revenue-without-currency'));
 });
 
-test('flags a dead Universal Analytics property on the real roll20 capture', () => {
-  const found = runRules(decodeDataLayer(roll20.dataLayer)).find((f) => f.rule === 'dead-property');
+test('flags a dead Universal Analytics property on the real production capture', () => {
+  const found = runRules(decodeDataLayer(production.dataLayer)).find((f) => f.rule === 'dead-property');
   assert.ok(found);
-  assert.match(found.message, /UA-31040388-1/);
+  assert.match(found.message, /UA-4455667-1/);
 });
 
 test('does not flag the GA4 property as dead', () => {
-  const findings = runRules(decodeDataLayer(roll20.dataLayer)).filter((f) => f.rule === 'dead-property');
+  const findings = runRules(decodeDataLayer(production.dataLayer)).filter((f) => f.rule === 'dead-property');
   assert.equal(findings.length, 1);
 });
 
@@ -1307,10 +1307,10 @@ process.exit(0);
 
 ```bash
 chmod +x bin/tagspy.js
-node bin/tagspy.js audit test/fixtures/datalayer/roll20-homepage.json
+node bin/tagspy.js audit test/fixtures/datalayer/production-homepage.json
 ```
 
-Expected: the report decodes 7 dataLayer events and reports the `dead-property` finding for `UA-31040388-1`.
+Expected: the report decodes 7 dataLayer events and reports the `dead-property` finding for `UA-4455667-1`.
 
 ```bash
 node bin/tagspy.js audit /nonexistent.json; echo "exit=$?"

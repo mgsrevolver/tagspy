@@ -5,7 +5,7 @@ import { tagEvent } from '../src/tag-event.js';
 import { runRules } from '../src/rules/index.js';
 import { decodeDataLayer } from '../src/adapters/datalayer.js';
 
-const roll20 = JSON.parse(readFileSync(new URL('./fixtures/datalayer/roll20-homepage.json', import.meta.url)));
+const production = JSON.parse(readFileSync(new URL('./fixtures/datalayer/production-homepage.json', import.meta.url)));
 
 const ga4Event = (fields) => tagEvent({ platform: 'ga4', account: 'G-A', timestamp: 0, ...fields });
 const ids = (findings) => findings.map((f) => f.rule);
@@ -54,14 +54,14 @@ test('accepts revenue with currency', () => {
   assert.ok(!ids(runRules(events)).includes('revenue-without-currency'));
 });
 
-test('flags a dead Universal Analytics property on the real roll20 capture', () => {
-  const found = runRules(decodeDataLayer(roll20.dataLayer)).find((f) => f.rule === 'dead-property');
+test('flags a dead Universal Analytics property on the real production capture', () => {
+  const found = runRules(decodeDataLayer(production.dataLayer)).find((f) => f.rule === 'dead-property');
   assert.ok(found);
-  assert.match(found.message, /UA-31040388-1/);
+  assert.match(found.message, /UA-4455667-1/);
 });
 
 test('does not flag the GA4 property as dead', () => {
-  const findings = runRules(decodeDataLayer(roll20.dataLayer)).filter((f) => f.rule === 'dead-property');
+  const findings = runRules(decodeDataLayer(production.dataLayer)).filter((f) => f.rule === 'dead-property');
   assert.equal(findings.length, 1);
 });
 

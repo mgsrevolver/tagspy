@@ -3,24 +3,24 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { decodeDataLayer } from '../../src/adapters/datalayer.js';
 
-const roll20 = JSON.parse(readFileSync(new URL('../fixtures/datalayer/roll20-homepage.json', import.meta.url)));
+const production = JSON.parse(readFileSync(new URL('../fixtures/datalayer/production-homepage.json', import.meta.url)));
 
-test('decodes the real roll20 dataLayer', () => {
-  const events = decodeDataLayer(roll20.dataLayer);
+test('decodes the real production dataLayer', () => {
+  const events = decodeDataLayer(production.dataLayer);
   assert.deepEqual(events.map((e) => e.eventName), [
-    'gtm.js', 'gtag.js', 'gtag.config', 'gtag.config', 'optedIn', 'start_pw', 'gtm.dom',
+    'gtm.js', 'gtag.js', 'gtag.config', 'gtag.config', 'optedIn', 'start_session', 'gtm.dom',
   ]);
 });
 
 test('extracts accounts from numeric-keyed gtag config calls', () => {
-  const events = decodeDataLayer(roll20.dataLayer);
+  const events = decodeDataLayer(production.dataLayer);
   const accounts = events.filter((e) => e.eventName === 'gtag.config').map((e) => e.account);
-  assert.deepEqual(accounts, ['UA-31040388-1', 'G-SZLSVQPSWG']);
+  assert.deepEqual(accounts, ['UA-4455667-1', 'G-AB12CD34EF']);
 });
 
 test('carries the config payload into params', () => {
-  const events = decodeDataLayer(roll20.dataLayer);
-  const config = events.find((e) => e.account === 'G-SZLSVQPSWG');
+  const events = decodeDataLayer(production.dataLayer);
+  const config = events.find((e) => e.account === 'G-AB12CD34EF');
   assert.equal(config.params.send_page_view, false);
 });
 

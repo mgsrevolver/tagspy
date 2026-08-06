@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "capturedAt": "2026-08-05T17:01:18.823Z",
+  "_source": "captured live from a production site homepage 2026-08-05; site-identifying values (measurement IDs, one event name) replaced",
+  "requests": [],
+  "dataLayer": [
+    { "gtm.start": 1785949278432, "event": "gtm.js", "gtm.uniqueEventId": 3 },
+    { "0": "js", "1": "2026-08-05T17:01:18.823Z" },
+    { "0": "config", "1": "UA-4455667-1", "2": { "cookieDomain": "auto", "send_page_view": false } },
+    { "0": "config", "1": "G-AB12CD34EF", "2": { "cookieDomain": "auto", "send_page_view": false } },
+    { "event": "optedIn", "gtm.uniqueEventId": 7 },
+    { "event": "start_session", "gtm.uniqueEventId": 8 },
+    { "event": "gtm.dom", "gtm.uniqueEventId": 9 }
+  ]
+}

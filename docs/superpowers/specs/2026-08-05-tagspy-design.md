@@ -75,11 +75,11 @@ Adapters absorb the per-platform ugliness — GA4 `epn.value` → `value`, Meta 
 
 ## Verified constraints
 
-Confirmed empirically against `roll20.net` and `example.com` on 2026-08-05, not assumed:
+Confirmed empirically against a live production site and `example.com` on 2026-08-05, not assumed:
 
 1. **`read_network_requests` preserves query strings intact.** Verified with `https://example.com/?en=purchase&epn.value=89.00&tid=G-TEST123` — returned verbatim. GA4/Meta/Ads decoding is viable through this path.
 2. **`javascript_tool` blocks in-page cookie and query-string reads.** A snippet touching `performance.getEntriesByType('resource')` URLs returned `[BLOCKED: Cookie/query string data]`. **Consequence:** network hits must come from `read_network_requests`; `javascript_tool` is for reading `window.dataLayer` objects only, and its snippets must avoid cookie/query-string access or the privacy guard rejects them.
-3. **`gtag()` calls land in `dataLayer` as `arguments` objects**, serializing with numeric keys — `{"0":"config","1":"G-SZLSVQPSWG","2":{...}}` — not as `{event: ...}`. The dataLayer adapter must handle both shapes. Observed live; would have been missed by assumption.
+3. **`gtag()` calls land in `dataLayer` as `arguments` objects**, serializing with numeric keys — `{"0":"config","1":"G-AB12CD34EF","2":{...}}` — not as `{event: ...}`. The dataLayer adapter must handle both shapes. Observed live; would have been missed by assumption.
 4. **Network capture begins when `read_network_requests` is first called.** Hits fired during initial page load are missed. The skill must call it before navigating, or reload after arming it.
 
 ## Heuristics for v1
@@ -136,11 +136,11 @@ No plan → heuristics only, exit 0. Plan present → assertions gate the exit c
 
 Recorded hit URLs as fixtures in `test/fixtures/`, one directory per platform. Every adapter and every rule tested against them. TDD throughout. **No browser in the test suite** — that is the payoff of the pure-core split.
 
-Real captured material available as seed fixtures (from `roll20.net`, 2026-08-05):
+Real captured material available as seed fixtures (from a production site, 2026-08-05):
 
-- GA4 measurement ID `G-SZLSVQPSWG` alongside a still-configured legacy `UA-31040388-1` — a live `dead-property` finding
+- GA4 measurement ID `G-AB12CD34EF` alongside a still-configured legacy `UA-4455667-1` — a live `dead-property` finding
 - `send_page_view: false` on both configs
-- dataLayer events `gtm.js`, `optedIn`, `start_pw`, `gtm.dom` — `optedIn` vs `start_pw` is a live `naming-collision` finding
+- dataLayer events `gtm.js`, `optedIn`, `start_session`, `gtm.dom` — `optedIn` vs `start_session` is a live `naming-collision` finding
 - TCF consent framework active; GA4 collect hits absent on the public homepage, consistent with consent gating
 - Microsoft Clarity (`e.clarity.ms/collect`) present — a platform not in v1 scope, and a test that unknown traffic is ignored rather than fatal
 
@@ -148,7 +148,7 @@ Real captured material available as seed fixtures (from `roll20.net`, 2026-08-05
 
 **Purchase fixtures are hand-authored.** Capturing a real `purchase` hit requires completing a real checkout, which is out of bounds. So `purchase` fixtures are synthesized from the GA4 Measurement Protocol and Meta Conversions API references, and every rule that depends on them — `duplicate-event` keyed on `transaction_id`, `revenue-without-currency`, `cross-platform-gap` — is verified against synthetic data only.
 
-This is the weakest link in the test strategy and the spec says so deliberately: vendor docs do not always match what `gtag.js` and `fbevents.js` actually emit in the wild, and the roll20 pass already produced one example of exactly that gap (`gtag()` arguments-objects in the dataLayer, documented nowhere obvious). Pre-purchase events (`view_item`, `add_to_cart`, `begin_checkout`) capture freely from any public storefront and should be sourced live. Treat purchase-path rules as lower-confidence until a real hit is available from a staging environment.
+This is the weakest link in the test strategy and the spec says so deliberately: vendor docs do not always match what `gtag.js` and `fbevents.js` actually emit in the wild, and the the production site pass already produced one example of exactly that gap (`gtag()` arguments-objects in the dataLayer, documented nowhere obvious). Pre-purchase events (`view_item`, `add_to_cart`, `begin_checkout`) capture freely from any public storefront and should be sourced live. Treat purchase-path rules as lower-confidence until a real hit is available from a staging environment.
 
 ## Error handling
 

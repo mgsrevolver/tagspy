@@ -748,17 +748,17 @@ import { tagEvent } from '../src/tag-event.js';
 import { runRules } from '../src/rules/index.js';
 import { decodeDataLayer } from '../src/adapters/datalayer.js';
 
-const roll20 = JSON.parse(readFileSync(new URL('./fixtures/datalayer/roll20-homepage.json', import.meta.url)));
+const production = JSON.parse(readFileSync(new URL('./fixtures/datalayer/production-homepage.json', import.meta.url)));
 
 const dl = (eventName, params = {}, order = 0) =>
   tagEvent({ platform: 'datalayer', eventName, params, timestamp: null, order });
 const ids = (findings) => findings.map((f) => f.rule);
 
-test('flags mixed naming conventions on the real roll20 container', () => {
-  const found = runRules(decodeDataLayer(roll20.dataLayer)).find((f) => f.rule === 'naming-collision');
+test('flags mixed naming conventions on the real production container', () => {
+  const found = runRules(decodeDataLayer(production.dataLayer)).find((f) => f.rule === 'naming-collision');
   assert.ok(found);
   assert.match(found.message, /optedIn/);
-  assert.match(found.message, /start_pw/);
+  assert.match(found.message, /start_session/);
 });
 
 test('flags two names that collide after normalization', () => {
@@ -797,8 +797,8 @@ test('flags a business event pushed before container init', () => {
   assert.match(found.message, /early_signup/);
 });
 
-test('roll20 pushes nothing before init', () => {
-  assert.ok(!ids(runRules(decodeDataLayer(roll20.dataLayer))).includes('push-before-init'));
+test('the production container pushes nothing before init', () => {
+  assert.ok(!ids(runRules(decodeDataLayer(production.dataLayer))).includes('push-before-init'));
 });
 
 test('flags consecutive ecommerce pushes with no clear between them', () => {
@@ -959,10 +959,10 @@ export function run(events) {
 
 Register all three in `src/rules/index.js` (append imports and `namingCollision, pushBeforeInit, ecommerceNotCleared` to `RULES`).
 
-- [ ] **Step 3: `npm test` — all green (84 tests).** Note the roll20 CLI e2e test in `test/cli.test.js` asserts `1 advisory finding` — the convention-mix finding now makes it 2. Amend that assertion to:
+- [ ] **Step 3: `npm test` — all green (84 tests).** Note the dataLayer CLI e2e test in `test/cli.test.js` asserts `1 advisory finding` — the convention-mix finding now makes it 2. Amend that assertion to:
 
 ```js
-  assert.match(res.stdout, /\[dead-property\] UA-31040388-1/);
+  assert.match(res.stdout, /\[dead-property\] UA-4455667-1/);
   assert.match(res.stdout, /\[naming-collision\] container mixes naming conventions/);
 ```
 
@@ -1086,6 +1086,6 @@ git commit -m "feat: utm-loss rule; document wire vs container rule channels"
 
 **Spec coverage.** Plan 2's committed scope, all present: 7 new rules + 2 earned from live capture (event-name-length, debug-mode-in-prod) = 9 new modules… counted: event-name-length, debug-mode-in-prod, placeholder-param, consent-suppression, naming-collision, push-before-init, ecommerce-not-cleared, utm-loss = 8 new + 2 polished. Carried deferrals resolved: consent unset (Task 1a), consent divergence (Task 1b), gtag('set')/sparse args (Task 2), ecommerce:null visibility (Task 2 — unblocks Task 5's rule), nested ecommerce hoist (Task 2), pageUrl dedupe + burst collapse (Task 3), double-fire (wire/container principle, Tasks 3–5). Explicitly deferred: cross-platform-gap → Plan 3; cross-source order → unowned, documented.
 
-**Fixture honesty.** Both real fixtures gain load-bearing assertions: storefront drives event-name-length + debug-mode-in-prod (Task 4, unit + CLI e2e), roll20 drives naming-collision convention-mix + push-before-init negative (Task 5). CLI e2e expectations amended in the same task that changes the behavior, never later.
+**Fixture honesty.** Both real fixtures gain load-bearing assertions: storefront drives event-name-length + debug-mode-in-prod (Task 4, unit + CLI e2e), the production site drives naming-collision convention-mix + push-before-init negative (Task 5). CLI e2e expectations amended in the same task that changes the behavior, never later.
 
 **Type consistency.** All rules `{id, run(events, ctx)}`; `finding()` unchanged; consent vocabulary defined once (Global Constraints) and used identically in Tasks 1 and 4. Test counts per task assume 55 at start: 58/64/67/76/84/87 — approximate (implementers report actuals; the invariant is "fully green").

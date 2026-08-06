@@ -12,7 +12,7 @@
 
 The core pipeline is complete: capture envelope → GA4 + dataLayer adapters →
 decode registry → 4 advisory rules → report/CLI. Advisory findings never affect
-the exit code. Run it against `test/fixtures/datalayer/roll20-homepage.json` for
+the exit code. Run it against `test/fixtures/datalayer/production-homepage.json` for
 a real finding (dead UA property) from real captured production data.
 
 ## What's next — follow-on plans, in order
@@ -57,6 +57,6 @@ Summary:
 
 "Growth marketer who built his own tracking-audit agent." When writing the
 README for public release, lead with the marketer's problem (silent tracking
-breakage) not the architecture. The roll20/merch-store findings make good
+breakage) not the architecture. The real-capture findings make good
 demo material: real dead UA properties and a 40-char-truncated event name
 found on production sites on day one.

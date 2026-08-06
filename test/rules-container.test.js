@@ -5,17 +5,17 @@ import { tagEvent } from '../src/tag-event.js';
 import { runRules } from '../src/rules/index.js';
 import { decodeDataLayer } from '../src/adapters/datalayer.js';
 
-const roll20 = JSON.parse(readFileSync(new URL('./fixtures/datalayer/roll20-homepage.json', import.meta.url)));
+const production = JSON.parse(readFileSync(new URL('./fixtures/datalayer/production-homepage.json', import.meta.url)));
 
 const dl = (eventName, params = {}, order = 0) =>
   tagEvent({ platform: 'datalayer', eventName, params, timestamp: null, order });
 const ids = (findings) => findings.map((f) => f.rule);
 
-test('flags mixed naming conventions on the real roll20 container', () => {
-  const found = runRules(decodeDataLayer(roll20.dataLayer)).find((f) => f.rule === 'naming-collision');
+test('flags mixed naming conventions on the real production container', () => {
+  const found = runRules(decodeDataLayer(production.dataLayer)).find((f) => f.rule === 'naming-collision');
   assert.ok(found);
   assert.match(found.message, /optedIn/);
-  assert.match(found.message, /start_pw/);
+  assert.match(found.message, /start_session/);
 });
 
 test('flags two names that collide after normalization', () => {
@@ -54,8 +54,8 @@ test('flags a business event pushed before container init', () => {
   assert.match(found.message, /early_signup/);
 });
 
-test('roll20 pushes nothing before init', () => {
-  assert.ok(!ids(runRules(decodeDataLayer(roll20.dataLayer))).includes('push-before-init'));
+test('the production container pushes nothing before init', () => {
+  assert.ok(!ids(runRules(decodeDataLayer(production.dataLayer))).includes('push-before-init'));
 });
 
 test('flags consecutive ecommerce pushes with no clear between them', () => {
